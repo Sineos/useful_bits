@@ -22,7 +22,6 @@ is_debian_11() {
 # buggy version string deb11u2
 is_udev_version_deb11u2() {
     udev_version=$(dpkg-query --show --showformat='${Version}' udev)
-    echo "Debug: ${udev_version}"
     if [[ "$udev_version" == *deb11u2* ]]; then
       return 0
     fi
@@ -89,7 +88,7 @@ if is_udev_version_deb11u2; then
         echo "${fInfo}All done, udev has been updated to the backports version${fReset}"
         echo "${fInfo}You should REBOOT now${fReset}"
     else
-        echo "Setting up bullseye-backports repository..."
+        echo "${fInfo}Setting up bullseye-backports repository...${fReset}"
         download_bullseye_backports_key
         add_bullseye_backports_to_sources
         apt update
