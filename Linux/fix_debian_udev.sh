@@ -83,7 +83,7 @@ try() {
     return $EXIT_CODE
 }
 
-# Function to move to the step_done processing step and
+# Function to move to the next processing step and
 # return a success / failure message from the just
 # processed step
 #
@@ -292,10 +292,10 @@ delete_log
 # seems to be shipped with deb11u1 Udev
 step "Update the apt repository index"
 try apt -qq update
-step_done
+step_done doExit="failure"
 step "Upgrade system (can take a while)"
 try apt -qq upgrade -y
-step_done
+step_done doExit="failure"
 
 # Check for buggy udev version
 step "Checking for buggy udev version"
