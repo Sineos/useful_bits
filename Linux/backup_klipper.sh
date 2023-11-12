@@ -12,7 +12,7 @@ BACKUP_DIR="/home/klipper/backup"
 NUM_BACKUPS_TO_KEEP=5  # Adjust this number based on your requirement
 
 # Remote setup for rclone // only tested with Google Drive
-# Other targets may need adoption of the script
+# Other targets may need adaption of the script
 REMOTE_NAME="myGoogleremote" # Replace with your rclone remote name
 REMOTE_DIR="remoteFolder"    # Replace with your remote directory in rclone's remote
 
@@ -78,6 +78,9 @@ WantedBy=multi-user.target"
     echo "$SERVICE_FILE_CONTENT" | sudo tee /etc/systemd/system/$SERVICE_NAME > /dev/null
 
     # Reload systemd daemon and enable service
+    if systemctl is-active --quiet $SERVICE_NAME; then
+        sudo systemctl stop $SERVICE_NAME
+    fi
     sudo systemctl daemon-reload
     sudo systemctl enable $SERVICE_NAME
     sudo systemctl start $SERVICE_NAME
