@@ -9,6 +9,7 @@ MONITOR_DIRS=("/home/klipper/printer_data/config" "/home/klipper/printer_data/da
 BACKUP_DIR="/home/klipper/backup"
 
 # Number of backups to keep for cleanup (only valid for 'local' backups)
+# Set to 0 to keep unlimited
 NUM_BACKUPS_TO_KEEP=5  # Adjust this number based on your requirement
 
 # Remote setup for rclone // only tested with Google Drive
@@ -154,7 +155,7 @@ git_backup() {
 
 # Function to keep only the specified number of newest backup files
 cleanup() {
-    if [ "$METHOD" == "local" ]; then
+    if [ "$METHOD" == "local" ] && [ "$NUM_BACKUPS_TO_KEEP" -ne 0 ]; then
         # Go to the backup directory
         cd "${BACKUP_DIR}" || exit
 
