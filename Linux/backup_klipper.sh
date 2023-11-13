@@ -21,7 +21,8 @@ GIT_REPO_PATH="/path/to/git/repo" # Replace with your Git repository path
 GIT_DEF_BRANCH="main"             # For GitHub the default branch is "main"
 GIT_REMOTE_NAME="origin"          # Replace with your Git remote name
 
-# Name of the systemd service
+# User for systemd service // Name of the service
+SERVICE_USER="pi"
 SERVICE_NAME="backup_klipper.service"
 
 ########## MAIN SCRIPT ##############
@@ -66,9 +67,11 @@ create_systemd_service() {
 
     # Create systemd service file safely
     SERVICE_FILE_CONTENT="[Unit]
-Description=Backup Script Service
+Description=Klipper Backup Script Service
+ConditionFileIsExecutable=$SCRIPT_PATH
 
 [Service]
+User=$SERVICE_USER
 ExecStart=$SCRIPT_PATH $1
 Restart=always
 
@@ -85,7 +88,7 @@ WantedBy=multi-user.target"
     sudo systemctl enable $SERVICE_NAME
     sudo systemctl start $SERVICE_NAME
 
-    echo "Service installed and started."
+    echo "Service installed and started as user $SERVICE_USER."
 }
 
 # Check for command line arguments for installation and help
