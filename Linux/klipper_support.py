@@ -4,6 +4,8 @@ import subprocess
 import zipfile
 from datetime import datetime
 import platform
+import re
+import time
 
 # ANSI color codes
 class Colors:
@@ -34,22 +36,19 @@ def ensure_empty_dir(path):
         shutil.rmtree(path)
     os.makedirs(path, exist_ok=True)
 
-import re
-
 def get_newest_log(log_dir, log_prefix):
     """Find the newest rotated klippy.log file."""
-  
+
     # List all files in the directory
     all_files = os.listdir(log_dir)
-    
+
     # Filter files that start with the prefix and have a date suffix
     log_files = [
         f for f in all_files
         if f.startswith(log_prefix) and re.match(r'^.*\.log\.\d{4}-\d{2}-\d{2}$', f)
     ]
-    
+
     if not log_files:
-        print("Debug: No matching log files found.")
         return None
 
     # Sort files by date in descending order
@@ -128,21 +127,21 @@ def main():
         step_message("Copying selective logs")
         if "printer_data" in log_file_path:
             log_dir = os.path.dirname(log_file_path)
-            
+
             files_to_copy = ["klippy.log", "moonraker.log"]
             for file in files_to_copy:
                 file_path = os.path.join(log_dir, file)
                 if os.path.exists(file_path):
                     shutil.copy(file_path, os.path.join(support_dir, file))
                     status_message(f"Copied {file}")
-        
+
             newest_log = get_newest_log(log_dir, "klippy.log")
             if newest_log:
                 shutil.copy(os.path.join(log_dir, newest_log), os.path.join(support_dir, newest_log))
                 status_message(f"Copied last rolled-over log: {newest_log}")
             else:
-                print("Debug: No archived klippy log found.")
-        
+                status_message(f"No archived klippy log found.")
+
         else:
             shutil.copy(log_file_path, os.path.join(support_dir, "klippy.log"))
         status_message("Selective logs copied")
@@ -188,17 +187,22 @@ def main():
                 for file in files:
                     abs_path = os.path.join(root, file)
                     arcname = os.path.relpath(abs_path, support_dir)
-                    zipf.write(abs_path, arcname)
+                    timestamp = time.strftime("%Y%m%d_%H%M%S")
+                    arcname_with_timestamp = f"{arcname}_{timestamp}"
+                    zipf.write(abs_path, arcname_with_timestamp)
         status_message("Support folder compressed")
 
         # Final message
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
         if "printer_data" in base_path:
-            final_path = os.path.join(base_path, "logs", "klipper_support.zip")
+            final_path = os.path.join(base_path, "logs", f"klipper_support_{timestamp}.zip")
             shutil.copy(zip_path, final_path)
             print(f"{Colors.BOLD}{Colors.OKGREEN}Support ZIP created: {final_path}{Colors.ENDC}")
             print(f"{Colors.BOLD}{Colors.WARNING}Get the file in the logs section of the webinterface. Refresh might be needed!{Colors.ENDC}")
         else:
-            print(f"{Colors.BOLD}{Colors.OKGREEN}Support ZIP created: {zip_path}{Colors.ENDC}")
+            final_path = f"/tmp/klipper_support_{timestamp}.zip"
+            shutil.copy(zip_path, final_path)
+            print(f"{Colors.BOLD}{Colors.OKGREEN}Support ZIP created: {final_path}{Colors.ENDC}")
 
     except Exception as e:
         status_message(str(e), success=False)
