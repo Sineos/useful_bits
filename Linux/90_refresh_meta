@@ -1,0 +1,82 @@
+#!/usr/bin/python3
+import argparse
+import asyncio
+import json
+import pathlib
+
+# Socket to connect to Moonraker
+SOCKET_FILE = "/home/pi/printer_data/comms/moonraker.sock"
+# Path to the gcode files on the host
+ROOT_PATH = "/home/pi/printer_data/gcodes/"
+# Name of the folder below the ROOT_PATH that is used to mount the external drive
+EXTERNAL_DRIVE = "external"
+
+DEFAULT_PATH = pathlib.Path(ROOT_PATH, EXTERNAL_DRIVE)
+
+async def send_rpc_request(sockpath, filename, debug):
+    """Send an RPC request to the Moonraker server to rescan the metadata."""
+    rpc_message = {
+        "jsonrpc": "2.0",
+        "method": "server.files.metascan",
+        "params": {"filename": filename},
+        "id": 3545,
+    }
+    message = json.dumps(rpc_message).encode() + b"\x03"
+
+    reader, writer = await asyncio.open_unix_connection(sockpath)
+    try:
+        writer.write(message)
+        await writer.drain()
+
+        while not reader.at_eof():
+            try:
+                response = await reader.readuntil(b"\x03")
+                decoded = response[:-1].decode("utf-8")
+                item = json.loads(decoded)
+
+                if item.get("id") == rpc_message["id"]:
+                    if debug:
+                        print("Response:", json.dumps(item, indent=4))
+                    break
+                elif debug:
+                    print("Unmatched Response or Notification:", json.dumps(item, indent=4))
+
+            except asyncio.IncompleteReadError:
+                if debug:
+                    print("Connection closed before receiving complete response.")
+                break
+            except Exception as e:
+                if debug:
+                    print(f"Error processing response: {e}")
+                break
+
+    finally:
+        writer.close()
+        await writer.wait_closed()
+
+def main():
+    parser = argparse.ArgumentParser(description="Rescan metadata for gcode files in Moonraker via Unix socket")
+    parser.add_argument("--path", default=str(DEFAULT_PATH), help="Path to scan for gcode files")
+    parser.add_argument("--debug", action="store_true", help="Enable debug output")
+    args = parser.parse_args()
+
+    root_path = pathlib.Path(ROOT_PATH)
+    scan_path = pathlib.Path(args.path)
+    sockpath = pathlib.Path(SOCKET_FILE)
+
+    if not scan_path.is_dir():
+        print(f"Error: Path '{scan_path}' is not a valid directory.")
+        return
+
+    gcode_files = scan_path.rglob("*.gcode")
+
+    async def process_files():
+        for gcode_file in gcode_files:
+            relative_path = gcode_file.relative_to(root_path)
+            rpc_filename = str(relative_path)
+            await send_rpc_request(sockpath, rpc_filename, args.debug)
+
+    asyncio.run(process_files())
+
+if __name__ == "__main__":
+    main()
