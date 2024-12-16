@@ -4,12 +4,15 @@ import asyncio
 import json
 import pathlib
 
-# Socket to connect to Moonraker
-SOCKET_FILE = "/home/pi/printer_data/comms/moonraker.sock"
-# Path to the gcode files on the host
-ROOT_PATH = "/home/pi/printer_data/gcodes/"
+# The username under which Klipper is running
+USERNAME = "pi"
 # Name of the folder below the ROOT_PATH that is used to mount the external drive
 EXTERNAL_DRIVE = "external"
+
+# Socket to connect to Moonraker
+SOCKET_FILE = f"/home/{USERNAME}/printer_data/comms/moonraker.sock"
+# Path to the gcode files on the host
+ROOT_PATH = f"/home/{USERNAME}/printer_data/gcodes/"
 
 DEFAULT_PATH = pathlib.Path(ROOT_PATH, EXTERNAL_DRIVE)
 
